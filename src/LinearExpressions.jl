@@ -33,7 +33,7 @@ type LinExpr{Tc<:Coeff, Tv<:Symbolic}
   coeffs::Dict{Tv, Tc}
 
   LinExpr(c::Tc, vc::Dict{Tv, Tc}) = new(c, filter((v, c) -> c != zero(c), vc))
-  LinExpr(c::Tc) = new(c, Dict{Tv, Tc})
+  LinExpr(c::Tc) = new(c, Dict{Tv, Tc}())
   LinExpr(vc::Dict{Tv, Tc}) = LinExpr{Tc, Tv}(zero(Tc), vc)
   LinExpr() = new(zero(Tc), Dict{Tv, Tc}())
 end
@@ -59,9 +59,10 @@ function linexpr_show{Tc<:Real, Tv<:Symbolic}(io::IO, e::LinExpr{Tc, Tv}, compac
         print(io, compact ? "+" : " + ")
       end
     end
-    if c != one(c)
+    if c == -one(c)
+      print(io, "-")
+    elseif c != one(c)
       print(io, c)
-#       print(io, compact ? "" : " ")
     end
     print(io, s)
   end
@@ -93,6 +94,12 @@ function ==(a::LinExpr, b::LinExpr)
   a.constt == b.constt && a.coeffs == b.coeffs
 end
 
+
+one{Tc<:Coeff, Tv<:Symbolic}(e::LinExpr{Tc, Tv}) = one(e.constt)
+zero{Tc<:Coeff, Tv<:Symbolic}(e::LinExpr{Tc, Tv}) = zero(e.constt)
+
+one{Tc<:Coeff, Tv<:Symbolic}(::Type{LinExpr{Tc, Tv}}) = one(Tc)
+zero{Tc<:Coeff, Tv<:Symbolic}(::Type{LinExpr{Tc, Tv}}) = zero(Tc)
 
 
 
@@ -138,6 +145,9 @@ end
 *{Tc<:Coeff, Tv<:Symbolic}(c::Tc, s::Tv) = LinExpr{Tc, Tv}(zero(c), [s=>c])
 *{Tc<:Coeff, Tv<:Symbolic}(s::Tv, c::Tc) = c * s
 
+
+.*(e::Union(Symbolic, LinExpr), a::AbstractArray) = map(x -> e*x, a)
+.*(a::AbstractArray, e::Union(Symbolic, LinExpr)) = e .* a
 
 
 
