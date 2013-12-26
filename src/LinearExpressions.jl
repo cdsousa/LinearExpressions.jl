@@ -102,7 +102,7 @@ one{Tc<:Coeff, Tv<:Symbolic}(::Type{LinExpr{Tc, Tv}}) = one(Tc)
 zero{Tc<:Coeff, Tv<:Symbolic}(::Type{LinExpr{Tc, Tv}}) = zero(Tc)
 
 
-
+convert{Tc<:Coeff, Tv<:Symbolic}(::Type{LinExpr{Tc, Tv}}, e::LinExpr{Tc, Tv}) = e
 function convert{Tc1<:Coeff, Tc2<:Coeff, Tv<:Symbolic}(::Type{LinExpr{Tc2, Tv}}, e::LinExpr{Tc1, Tv})
     LinExpr{Tc2, Tv}(convert(Tc2, e.constt), [v=>convert(Tc2, c) for (v, c) in e.coeffs])
 end
