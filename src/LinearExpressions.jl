@@ -128,8 +128,8 @@ end
 
 function *{Tc<:Coeff, Tv<:Symbolic}(c::Tc, e::LinExpr{Tc, Tv})
   constt = e.constt * c
-  coeffs = copy(e.coeffs)
-  for (s, coeff) in coeffs
+  coeffs = similar(e.coeffs)
+  for (s, coeff) in e.coeffs
     coeffs[s] = c * coeff
   end
   LinExpr{Tc, Tv}(constt, coeffs)
@@ -153,7 +153,10 @@ end
 
 function +{T<:LinExpr}(a::T, b::T)
   constt = a.constt + b.constt
-  coeffs = copy(a.coeffs)
+  coeffs = similar(a.coeffs)
+  for (v, c) in a.coeffs
+    coeffs[v] = c
+  end
   for (v, c) in b.coeffs
     coeffs[v] = c + get(coeffs, v, zero(constt))
   end
@@ -163,8 +166,8 @@ end
 +(a::LinExpr) = a
 
 function -(a::LinExpr)
-  b = LinExpr(-a.constt, copy(a.coeffs))
-  for (v, c) in b.coeffs
+  b = LinExpr(-a.constt, similar(a.coeffs))
+  for (v, c) in a.coeffs
     b.coeffs[v] = -c
   end
   b
@@ -183,7 +186,7 @@ end
 +(x::Coeff, y::Union(Symbolic, LinExpr)) = y + x
 
 -(x::Union(Symbolic, LinExpr), y::Coeff) = -(promote(x,y)...)
--(x::Coeff, y::Union(Symbolic, LinExpr)) = y - x
+-(x::Coeff, y::Union(Symbolic, LinExpr)) = x + (-y)
 
 
 end # module
