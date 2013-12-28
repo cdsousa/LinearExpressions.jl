@@ -13,8 +13,8 @@ Examples
 ```Julia
 julia> using LinearExpressions
 
-julia> a, b, c, d, w, x, y, z = map(SymReal, [:a, :b, :c, :d, :w, :x, :y, :z])
-8-element Array{Symbolic{Real},1}:
+julia> a, b, c, d, w, x, y, z = map(RealVar, [:a, :b, :c, :d, :w, :x, :y, :z])
+8-element Array{TypedVariable{Real},1}:
  a
  b
  c
@@ -31,8 +31,8 @@ julia> le + 3*le
 4.92 - 4.0d - 13.6b - 13.6a + 4.0y + 9.2w + 9.2z - 4.0c + 4.0x
 
 julia> [x y; y 1] + [1.5 2; 3 4] * [x 0; z 0]
-2x2 Array{LinExpr{Float64,Symbolic{Real}},2}:
- 2.0z+2.5x    y  
+2x2 Array{LinExpr{Float64,TypedVariable{Real}},2}:
+ 2.0z+2.5x    y
  y+4.0z+3.0x  1.0
 
 julia> [1 2; 2 1] + [0.0 1.2; 1.2 0.0]*x + 4*eye(2)*y
