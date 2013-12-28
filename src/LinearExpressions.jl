@@ -20,17 +20,11 @@ show(io::IO, x::BasicVariable) = print(io, x.sym)
 
 
 # Symbolic variables with assosiated type (experimental)
-const TYPEDVARIABLE_HASH_SEED = uint(112358)
 immutable TypedVariable{T} <: AbstractVariable
   sym::Symbol
-  _hash::Uint
-  function TypedVariable(sym::Symbol)
-    new(sym, bitmix(bitmix(TYPEDVARIABLE_HASH_SEED, hash(T)), hash(sym)))
-  end
 end
 show(io::IO, x::TypedVariable) = print(io, x.sym)
-hash(s::TypedVariable) = s._hash
-(==){T}(x::TypedVariable{T}, y::TypedVariable{T}) = x._hash == y._hash
+(==){T}(x::TypedVariable{T}, y::TypedVariable{T}) = x.sym == y.sym
 typealias RealVar TypedVariable{Real}
 
 
