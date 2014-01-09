@@ -102,6 +102,14 @@ function ==(a::LinExpr, b::LinExpr)
 end
 
 
+function getindex{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, v::Tv)
+    get(e.coeffs, v, zero(e.constt))
+end
+function setindex!{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, x::Tc, v::Tv)
+    e.coeffs[v] = x
+end
+
+
 one{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = one(e.constt)
 zero{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = zero(e.constt)
 
@@ -194,6 +202,13 @@ end
 
 -(x::Union(AbstractVariable, LinExpr), y::Coeff) = -(promote(x,y)...)
 -(x::Coeff, y::Union(AbstractVariable, LinExpr)) = x + (-y)
+
+
+
+differentiate(s::AbstractVariable, d::AbstractVariable) = s==d ? one(1) : zero(0)
+differentiate{T}(s::TypedVariable{T}, d::TypedVariable{T}) = s==d ? one(T) : zero(T)
+differentiate(c::Coeff, d::AbstractVariable) = zero(c)
+differentiate{Tc, Tv}(e::LinExpr{Tc, Tv}, d::Tv) = get(e.coeffs, d, zero(e.constt))
 
 
 end # module
