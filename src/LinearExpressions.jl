@@ -1,7 +1,8 @@
 module LinearExpressions
 
 
-export Symbolic, LinExpr, AbstractVariable, BasicVariable, TypedVariable, RealVar
+export Symbolic, LinExpr, AbstractVariable, BasicVariable, TypedVariable,
+    RealVar, getcoeff, setcoeff!
 
 
 import Base: hash, show, print, showcompact, convert, promote_rule, zero, one,
@@ -102,19 +103,19 @@ function ==(a::LinExpr, b::LinExpr)
 end
 
 
-function getindex{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, v::Tv)
+function getcoeff{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, v::Tv)
     get(e.coeffs, v, zero(e.constt))
 end
-function setindex!{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, x::Tc, v::Tv)
+function setcoeff!{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, v::Tv, x::Tc)
     e.coeffs[v] = x
 end
 
 
-one{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = one(e.constt)
-zero{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = zero(e.constt)
+one{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = LinExpr{Tc, Tv}(one(e.constt))
+zero{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = LinExpr{Tc, Tv}(zero(e.constt))
 
-one{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = one(Tc)
-zero{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = zero(Tc)
+one{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = LinExpr{Tc, Tv}(one(Tc))
+zero{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = LinExpr{Tc, Tv}(zero(Tc))
 
 
 convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}, e::LinExpr{Tc, Tv}) = e
