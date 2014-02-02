@@ -2,7 +2,7 @@ module LinearExpressions
 
 
 export Symbolic, LinExpr, AbstractVariable, BasicVariable, TypedVariable,
-    RealVar, getcoeff, setcoeff!
+    RealVariable, getcoeff, setcoeff!, differentiate
 
 
 import Base: hash, show, print, showcompact, convert, promote_rule, zero, one,
@@ -26,13 +26,15 @@ immutable TypedVariable{T} <: AbstractVariable
 end
 show(io::IO, x::TypedVariable) = print(io, x.sym)
 (==){T}(x::TypedVariable{T}, y::TypedVariable{T}) = x.sym == y.sym
-typealias RealVar TypedVariable{Real}
+typealias RealVariable TypedVariable{Real}
 
 
 ###########################################################
 
 
-typealias Coeff{T<:Real} Union(T, AbstractArray{T})
+typealias ScalarCoeff Real
+typealias ArrayCoeff{T<:Real} AbstractArray{T}
+typealias Coeff Union(ScalarCoeff, ArrayCoeff)
 
 
 
@@ -50,7 +52,7 @@ LinExpr{Tc<:Coeff, Tv<:AbstractVariable}(c::Tc, vc::Dict{Tv, Tc}) = LinExpr{Tc, 
 
 
 
-function linexpr_show{Tc<:Real, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}, compact::Bool)
+function linexpr_show{Tc<:ScalarCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}, compact::Bool)
   start = true
   if e.constt != zero(e.constt) || isempty(e.coeffs)
     print(io, e.constt)
@@ -75,11 +77,11 @@ function linexpr_show{Tc<:Real, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}
     print(io, s)
   end
 end
-show{Tc<:Real, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}) = linexpr_show(io, e, false)
-showcompact{Tc<:Real, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}) = linexpr_show(io, e, true)
+show{Tc<:ScalarCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}) = linexpr_show(io, e, false)
+showcompact{Tc<:ScalarCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}) = linexpr_show(io, e, true)
 
 
-function show{Tc<:AbstractArray, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv})
+function show{Tc<:ArrayCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv})
   start = true
   if e.constt != zero(e.constt) || isempty(e.coeffs)
     print(io, e.constt)
@@ -134,10 +136,10 @@ promote_rule{Tc<:Coeff, Tv<:AbstractVariable}(::Type{Tc}, ::Type{Tv}) = LinExpr{
 promote_rule{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}, ::Type{Tv}) = LinExpr{Tc, Tv}
 
 
-function promote_rule{T1<:Real, T2<:Real, N, Tv<:AbstractVariable}(::Type{LinExpr{Array{T1, N}, Tv}}, ::Type{LinExpr{Array{T2, N}, Tv}})
+function promote_rule{T1<:ScalarCoeff, T2<:ScalarCoeff, N, Tv<:AbstractVariable}(::Type{LinExpr{Array{T1, N}, Tv}}, ::Type{LinExpr{Array{T2, N}, Tv}})
   LinExpr{Array{promote_type(T1, T2), N}, Tv}
 end
-function promote_rule{T1<:Real, T2<:Real, N, Tv<:AbstractVariable}(::Type{LinExpr{Array{T1, N}, Tv}}, ::Type{Array{T2, N}})
+function promote_rule{T1<:ScalarCoeff, T2<:ScalarCoeff, N, Tv<:AbstractVariable}(::Type{LinExpr{Array{T1, N}, Tv}}, ::Type{Array{T2, N}})
   LinExpr{Array{promote_type(T1, T2), N}, Tv}
 end
 
@@ -162,8 +164,8 @@ end
 *{Tc<:Coeff, Tv<:AbstractVariable}(s::Tv, c::Tc) = c * s
 
 
-.*(e::Union(AbstractVariable, LinExpr), a::AbstractArray) = map(x -> e*x, a)
-.*(a::AbstractArray, e::Union(AbstractVariable, LinExpr)) = e .* a
+.*(e::Union(AbstractVariable, LinExpr), a::ArrayCoeff) = map(x -> e*x, a)
+.*(a::ArrayCoeff, e::Union(AbstractVariable, LinExpr)) = e .* a
 
 
 
@@ -204,6 +206,12 @@ end
 -(x::Union(AbstractVariable, LinExpr), y::Coeff) = -(promote(x,y)...)
 -(x::Coeff, y::Union(AbstractVariable, LinExpr)) = x + (-y)
 
+
+==(x::Union(AbstractVariable, LinExpr), y::Coeff) = ==(promote(x,y)...)
+!=(x::Union(AbstractVariable, LinExpr), y::Coeff) = !(==(promote(x,y)...))
+
+==(x::Union(AbstractVariable, LinExpr), y::Union(AbstractVariable, LinExpr)) = ==(promote(x,y)...)
+!=(x::Union(AbstractVariable, LinExpr), y::Union(AbstractVariable, LinExpr)) = !(==(promote(x,y)...))
 
 
 differentiate(s::AbstractVariable, d::AbstractVariable) = s==d ? one(1) : zero(0)

@@ -3,7 +3,6 @@ LinearExpressions
 
 **Linear symbolic expressions for the Julia language**
 
-*WIP*
 
 [![Build Status](https://travis-ci.org/cdsousa/LinearExpressions.jl.png)](https://travis-ci.org/cdsousa/LinearExpressions.jl)
 
@@ -13,7 +12,7 @@ Examples
 ```Julia
 julia> using LinearExpressions
 
-julia> a, b, c, d, w, x, y, z = map(RealVar, [:a, :b, :c, :d, :w, :x, :y, :z])
+julia> a, b, c, d, w, x, y, z = map(RealVariable, [:a, :b, :c, :d, :w, :x, :y, :z])
 8-element Array{TypedVariable{Real},1}:
  a
  b
@@ -23,6 +22,18 @@ julia> a, b, c, d, w, x, y, z = map(RealVar, [:a, :b, :c, :d, :w, :x, :y, :z])
  x
  y
  z
+
+julia> 2x
+2x
+
+julia> 2x + 1
+1 + 2x
+
+julia> 4 * (3 + 2x)
+12 + 8x
+
+julia> x - x == 0
+true
 
 julia> le = x + y + 2.3 * (w + z) - 3.4 * (a + b) - c - d + 1.23
 1.23 - d - 3.4b - 3.4a + y + 2.3w + 2.3z - c + x
