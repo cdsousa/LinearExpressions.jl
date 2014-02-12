@@ -25,6 +25,9 @@ ix = TypedVariable{Integer}(:x)
 
 @test_throws (1+2x) * (3+4y) # no polynomials
 
+@test conj(x) == x
+@test conj(2x) == 2x
+
 
 A = rand(Int, 2, 2)
 B = rand(Int, 2, 2)

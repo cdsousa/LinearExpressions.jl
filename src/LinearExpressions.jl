@@ -6,7 +6,7 @@ export Symbolic, LinExpr, AbstractVariable, BasicVariable, TypedVariable,
 
 
 import Base: hash, show, print, showcompact, convert, promote_rule, zero, one,
-             (==), (+), (-), (*), (.*)
+             conj, (==), (+), (-), (*), (.*)
 
 
 
@@ -118,6 +118,9 @@ zero{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = LinExpr{Tc, Tv}(zero
 
 one{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = LinExpr{Tc, Tv}(one(Tc))
 zero{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = LinExpr{Tc, Tv}(zero(Tc))
+
+conj{T<:Real}(x::TypedVariable{T}) = x
+conj{Tc<:Real, T<:Real}(e::LinExpr{Tc, TypedVariable{T}}) = e
 
 
 function convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{Tc}, e::LinExpr{Tc, Tv})
