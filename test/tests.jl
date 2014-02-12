@@ -62,5 +62,14 @@ end
 test_sum()
 
 
+@test convert(RealVariable, LinExpr{Float64, RealVariable}([x=>1.0])) == x
+
+@test_throws convert(RealVariable, LinExpr(0.0, [x=>1.0, y=>1.0]))
+@test_throws convert(RealVariable, LinExpr{Float64, RealVariable}(1.23))
+
+@test convert(Float64, LinExpr{Float64, RealVariable}(1.23)) == 1.23
+@test_throws convert(Float64, LinExpr(1.23, [x=>4.56]))
+
+
 println("✓ all LinearExpressions tests passed")
 

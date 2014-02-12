@@ -120,6 +120,29 @@ one{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = LinExpr{Tc, Tv}(
 zero{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = LinExpr{Tc, Tv}(zero(Tc))
 
 
+function convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{Tc}, e::LinExpr{Tc, Tv})
+    if isempty(e.coeffs)
+        e.constt
+    else
+        throw(InexactError())
+    end
+end
+
+function convert{Tc<:ScalarCoeff, Tv<:AbstractVariable}(::Type{Tv}, e::LinExpr{Tc, Tv})
+    if e.constt != zero(Tc) || length(e.coeffs) != 1
+        throw(InexactError())
+    else
+        s = collect(keys(e.coeffs))[1]
+        if e.coeffs[s] != one(Tc)
+            throw(InexactError())
+        else
+            s
+        end
+    end
+end
+
+
+
 convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}, e::LinExpr{Tc, Tv}) = e
 function convert{Tc1<:Coeff, Tc2<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc2, Tv}}, e::LinExpr{Tc1, Tv})
     LinExpr{Tc2, Tv}(convert(Tc2, e.constt), [v=>convert(Tc2, c) for (v, c) in e.coeffs])
