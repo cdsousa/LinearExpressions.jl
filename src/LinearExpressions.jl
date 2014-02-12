@@ -233,6 +233,8 @@ end
 ==(x::Union(AbstractVariable, LinExpr), y::Coeff) = ==(promote(x,y)...)
 !=(x::Union(AbstractVariable, LinExpr), y::Coeff) = !(==(promote(x,y)...))
 
+
+=={T1<:AbstractVariable, T2<:AbstractVariable}(::T1, ::T2) = false  # safe for different variable types
 ==(x::Union(AbstractVariable, LinExpr), y::Union(AbstractVariable, LinExpr)) = ==(promote(x,y)...)
 !=(x::Union(AbstractVariable, LinExpr), y::Union(AbstractVariable, LinExpr)) = !(==(promote(x,y)...))
 

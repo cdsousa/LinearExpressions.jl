@@ -8,9 +8,11 @@ using LinearExpressions
 
 
 a, b, c, d, w, x, y, z = map(RealVariable, [:a, :b, :c, :d, :w, :x, :y, :z])
+ix = TypedVariable{Integer}(:x)
 
 @test x == x
 @test x != y
+@test x != ix
 @test 1x == x
 @test 1x == 1.0x
 @test -x == -1x
