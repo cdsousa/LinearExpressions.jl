@@ -29,6 +29,11 @@ ix = TypedVariable{Integer}(:x)
 @test conj(2x) == 2x
 
 
+@test 2 * [x y] == [2x 2y]
+@test 2.0 * [x 3y] == [2.0x 6.0y]
+@test [x 3y] * 2.0 == [2.0x 6.0y]
+
+
 A = rand(Int, 2, 2)
 B = rand(Int, 2, 2)
 

@@ -190,6 +190,9 @@ end
 *{Tc<:Coeff, Tv<:AbstractVariable}(s::Tv, c::Tc) = c * s
 
 
+.*(a::ScalarCoeff, e::Union(AbstractVariable, LinExpr)) = a*e
+.*(e::Union(AbstractVariable, LinExpr), a::ScalarCoeff) = e*a
+
 .*(e::Union(AbstractVariable, LinExpr), a::ArrayCoeff) = map(x -> e*x, a)
 .*(a::ArrayCoeff, e::Union(AbstractVariable, LinExpr)) = e .* a
 
