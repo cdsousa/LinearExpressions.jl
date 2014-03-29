@@ -3,11 +3,17 @@ compiler:
   - clang
 notifications:
   email: false
+env:
+  matrix:
+    - JULIAVERSION="juliareleases"
+    - JULIAVERSION="julianightlies"
 before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
-  - sudo add-apt-repository ppa:staticfloat/julianightlies -y
+  - sudo add-apt-repository ppa:staticfloat/${JULIAVERSION} -y
   - sudo apt-get update -qq -y
   - sudo apt-get install libpcre3-dev julia -y
 script:
-  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("LinearExpressions"))`); Pkg.pin("LinearExpressions"); Pkg.resolve()'
-  - julia run_tests.jl
+  - julia -e 'versioninfo(); Pkg.init(); Pkg.clone(pwd())'
+  #- julia -e 'Pkg.test("LinearExpressions")'
+  - julia ./test/runtests.jl
+
