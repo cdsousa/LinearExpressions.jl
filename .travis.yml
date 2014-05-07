@@ -11,9 +11,13 @@ before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
   - sudo add-apt-repository ppa:staticfloat/${JULIAVERSION} -y
   - sudo apt-get update -qq -y
+install:
   - sudo apt-get install libpcre3-dev julia -y
+  - julia -e 'versioninfo()'
+  - julia -e 'Pkg.add("Coverage")'
+  - julia -e 'Pkg.clone(pwd())'
 script:
-  - julia -e 'versioninfo(); Pkg.init(); Pkg.clone(pwd())'
   #- julia -e 'Pkg.test("LinearExpressions")'
   - julia --code-coverage pkgtest.jl
-  - julia -e 'Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+after_success:
+  - julia -e 'cd(Pkg.dir("LinearExpressions")); using Coverage; Coveralls.submit(Coveralls.process_folder())'
