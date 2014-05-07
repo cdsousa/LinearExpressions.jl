@@ -15,5 +15,6 @@ before_install:
 script:
   - julia -e 'versioninfo(); Pkg.init(); Pkg.clone(pwd())'
   #- julia -e 'Pkg.test("LinearExpressions")'
-  - julia ./test/runtests.jl
-
+  - julia --code-coverage test/runtests.jl
+  - julia -e 'Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+  
