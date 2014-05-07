@@ -1,7 +1,4 @@
 
-using Base.Test
-
-
 a, b, c, d, w, x, y, z = map(RealVariable, [:a, :b, :c, :d, :w, :x, :y, :z])
 ix = TypedVariable{Integer}(:x)
 
@@ -18,7 +15,7 @@ ix = TypedVariable{Integer}(:x)
 @test x+y-x == y
 @test 2.2x+4.4y == 2*(1.1x+2.2y)
 
-@test_throws (1+2x) * (3+4y) # no polynomials
+@test_throws MethodError (1+2x) * (3+4y) # no polynomials
 
 @test conj(x) == x
 @test conj(2x) == 2x
@@ -69,9 +66,9 @@ test_sum()
 
 @test convert(RealVariable, LinExpr{Float64, RealVariable}([x=>1.0])) == x
 
-@test_throws convert(RealVariable, LinExpr(0.0, [x=>1.0, y=>1.0]))
-@test_throws convert(RealVariable, LinExpr{Float64, RealVariable}(1.23))
+@test_throws InexactError convert(RealVariable, LinExpr(0.0, [x=>1.0, y=>1.0]))
+@test_throws InexactError convert(RealVariable, LinExpr{Float64, RealVariable}(1.23))
 
 @test convert(Float64, LinExpr{Float64, RealVariable}(1.23)) == 1.23
-@test_throws convert(Float64, LinExpr(1.23, [x=>4.56]))
+@test_throws InexactError convert(Float64, LinExpr(1.23, [x=>4.56]))
 
