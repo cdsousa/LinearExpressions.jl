@@ -41,9 +41,9 @@ le2 = 1.23 - d - 3.4b - 3.4a + y + 2.3w + 2.3z - c
 
 
 function test_eq()
-  a1 = LinExpr(-1.2, [x=>-1., y=>2.])
-  a2 = LinExpr(-1.2, [x=>-1., y=>2.])
-  b = LinExpr(-3.4, [x=>-3., y=>4.])
+  a1 = LinExpr(-1.2, Dict(x=>-1., y=>2.))
+  a2 = LinExpr(-1.2, Dict(x=>-1., y=>2.))
+  b = LinExpr(-3.4, Dict(x=>-3., y=>4.))
   @test a1 == a2
   @test a1 != b
 end
@@ -52,11 +52,11 @@ test_eq()
 
 
 function test_sum()
-  a = LinExpr(-1.2, [x=>-1., y=>2.])
-  b = LinExpr(-3.4, [x=>-3., y=>4.])
-  c = LinExpr(-3.4, [x=>1., z=>4.])
-  r_a_b = LinExpr(-4.6, [x=>-4., y=>6.])
-  r_a_c = LinExpr(-4.6, [y=>2., z=>4.])
+  a = LinExpr(-1.2, Dict(x=>-1., y=>2.))
+  b = LinExpr(-3.4, Dict(x=>-3., y=>4.))
+  c = LinExpr(-3.4, Dict(x=>1., z=>4.))
+  r_a_b = LinExpr(-4.6, Dict(x=>-4., y=>6.))
+  r_a_c = LinExpr(-4.6, Dict(y=>2., z=>4.))
   @test a+b == r_a_b
   @test a+c == r_a_c
 end
@@ -64,11 +64,10 @@ end
 test_sum()
 
 
-@test convert(RealVariable, LinExpr{Float64, RealVariable}([x=>1.0])) == x
+@test convert(RealVariable, LinExpr{Float64, RealVariable}(Dict(x=>1.0))) == x
 
-@test_throws InexactError convert(RealVariable, LinExpr(0.0, [x=>1.0, y=>1.0]))
+@test_throws InexactError convert(RealVariable, LinExpr(0.0, Dict(x=>1.0, y=>1.0)))
 @test_throws InexactError convert(RealVariable, LinExpr{Float64, RealVariable}(1.23))
 
 @test convert(Float64, LinExpr{Float64, RealVariable}(1.23)) == 1.23
-@test_throws InexactError convert(Float64, LinExpr(1.23, [x=>4.56]))
-
+@test_throws InexactError convert(Float64, LinExpr(1.23, Dict(x=>4.56)))

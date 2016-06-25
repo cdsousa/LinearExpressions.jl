@@ -6,7 +6,7 @@ export Symbolic, LinExpr, AbstractVariable, BasicVariable, TypedVariable,
 
 
 import Base: hash, show, print, showcompact, convert, promote_rule, zero, one,
-             conj, (==), (+), (-), (*), (.*)
+             conj, (==), (!=), (+), (-), (*), (.*)
 
 
 
@@ -34,7 +34,7 @@ typealias RealVariable TypedVariable{Real}
 
 typealias ScalarCoeff Real
 typealias ArrayCoeff{T<:Real} AbstractArray{T}
-typealias Coeff Union(ScalarCoeff, ArrayCoeff)
+typealias Coeff Union{ScalarCoeff, ArrayCoeff}
 
 
 
@@ -153,7 +153,7 @@ end
 
 
 convert{Tc1<:Coeff, Tv<:AbstractVariable, Tc2<:Coeff}(::Type{LinExpr{Tc1, Tv}}, x::Tc2) = LinExpr{Tc1, Tv}(convert(Tc1, x), Dict{Tv, Tc1}())
-convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}, x::Tv) = LinExpr{Tc, Tv}(zero(Tc), [x=>one(Tc)])
+convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}, x::Tv) = LinExpr{Tc, Tv}(zero(Tc), Dict(x=>one(Tc)))
 
 
 promote_rule{Tc1<:Coeff, Tc2<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc1, Tv}}, ::Type{LinExpr{Tc2, Tv}}) = LinExpr{promote_type(Tc1, Tc2), Tv}
@@ -186,15 +186,21 @@ function *{Tc1<:Coeff, Tv<:AbstractVariable, Tc2<:Coeff}(c::Tc2, e::LinExpr{Tc1,
 end
 *{Tc1<:Coeff, Tv<:AbstractVariable, Tc2<:Coeff}(e::LinExpr{Tc1, Tv}, c::Tc2) = c * e
 
-*{Tc<:Coeff, Tv<:AbstractVariable}(c::Tc, s::Tv) = LinExpr{Tc, Tv}(zero(c), [s=>c])
+*{Tc<:Coeff, Tv<:AbstractVariable}(c::Tc, s::Tv) = LinExpr{Tc, Tv}(zero(c), Dict(s=>c))
 *{Tc<:Coeff, Tv<:AbstractVariable}(s::Tv, c::Tc) = c * s
 
 
-.*(a::ScalarCoeff, e::Union(AbstractVariable, LinExpr)) = a*e
-.*(e::Union(AbstractVariable, LinExpr), a::ScalarCoeff) = e*a
 
-.*(e::Union(AbstractVariable, LinExpr), a::ArrayCoeff) = map(x -> e*x, a)
-.*(a::ArrayCoeff, e::Union(AbstractVariable, LinExpr)) = e .* a
+
+typealias VarOrLinExpr Union{AbstractVariable, LinExpr}
+
+
+
+.*(a::ScalarCoeff, e::VarOrLinExpr) = a*e
+.*(e::VarOrLinExpr, a::ScalarCoeff) = e*a
+
+.*(e::VarOrLinExpr, a::ArrayCoeff) = map(x -> e*x, a)
+.*(a::ArrayCoeff, e::VarOrLinExpr) = e .* a
 
 
 
@@ -226,23 +232,23 @@ end
 +(x::AbstractVariable) = 1 * x
 
 
-+(x::Union(AbstractVariable, LinExpr), y::Union(AbstractVariable, LinExpr)) = +(promote(+x,y)...)
--(x::Union(AbstractVariable, LinExpr), y::Union(AbstractVariable, LinExpr)) = x + (-y)
++(x::VarOrLinExpr, y::VarOrLinExpr) = +(promote(+x,y)...)
+-(x::VarOrLinExpr, y::VarOrLinExpr) = x + (-y)
 
-+(x::Union(AbstractVariable, LinExpr), y::Coeff) = +(promote(x,y)...)
-+(x::Coeff, y::Union(AbstractVariable, LinExpr)) = y + x
++(x::VarOrLinExpr, y::Coeff) = +(promote(x,y)...)
++(x::Coeff, y::VarOrLinExpr) = y + x
 
--(x::Union(AbstractVariable, LinExpr), y::Coeff) = -(promote(x,y)...)
--(x::Coeff, y::Union(AbstractVariable, LinExpr)) = x + (-y)
+-(x::VarOrLinExpr, y::Coeff) = -(promote(x,y)...)
+-(x::Coeff, y::VarOrLinExpr) = x + (-y)
 
 
-==(x::Union(AbstractVariable, LinExpr), y::Coeff) = ==(promote(x,y)...)
-!=(x::Union(AbstractVariable, LinExpr), y::Coeff) = !(==(promote(x,y)...))
+==(x::VarOrLinExpr, y::Coeff) = ==(promote(x,y)...)
+!=(x::VarOrLinExpr, y::Coeff) = !(==(promote(x,y)...))
 
 
 =={T1<:AbstractVariable, T2<:AbstractVariable}(::T1, ::T2) = false  # safe for different variable types
-==(x::Union(AbstractVariable, LinExpr), y::Union(AbstractVariable, LinExpr)) = ==(promote(x,y)...)
-!=(x::Union(AbstractVariable, LinExpr), y::Union(AbstractVariable, LinExpr)) = !(==(promote(x,y)...))
+==(x::VarOrLinExpr, y::VarOrLinExpr) = ==(promote(x,y)...)
+!=(x::VarOrLinExpr, y::VarOrLinExpr) = !(==(promote(x,y)...))
 
 
 differentiate(s::AbstractVariable, d::AbstractVariable) = s==d ? one(1) : zero(0)
@@ -252,5 +258,3 @@ differentiate{Tc, Tv}(e::LinExpr{Tc, Tv}, d::Tv) = get(e.coeffs, d, zero(e.const
 
 
 end # module
-
-
