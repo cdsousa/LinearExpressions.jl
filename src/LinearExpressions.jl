@@ -6,14 +6,14 @@ export Symbolic, LinExpr, AbstractVariable, BasicVariable, TypedVariable,
 
 
 import Base: hash, show, print, showcompact, convert, promote_rule, zero, one,
-             conj, (==), (!=), (+), (-), (*), (.*)
+             conj, (==), (!=), (+), (-), (*), (.*), transpose
 
 
 
 # Borrowed from Calculus.jl
-abstract Symbolic
-abstract AbstractVariable <: Symbolic
-immutable BasicVariable <: AbstractVariable
+abstract type Symbolic end
+abstract type AbstractVariable <: Symbolic end
+struct BasicVariable <: AbstractVariable
   sym::Symbol
 end
 show(io::IO, x::BasicVariable) = print(io, x.sym)
@@ -21,38 +21,39 @@ show(io::IO, x::BasicVariable) = print(io, x.sym)
 
 
 # Symbolic variables with assosiated type (experimental)
-immutable TypedVariable{T} <: AbstractVariable
+struct TypedVariable{T} <: AbstractVariable
   sym::Symbol
 end
 show(io::IO, x::TypedVariable) = print(io, x.sym)
-(==){T}(x::TypedVariable{T}, y::TypedVariable{T}) = x.sym == y.sym
-typealias RealVariable TypedVariable{Real}
+(==)(x::TypedVariable{T}, y::TypedVariable{T}) where {T} = x.sym == y.sym
+const RealVariable = TypedVariable{Real}
 
 
 ###########################################################
 
 
-typealias ScalarCoeff Real
-typealias ArrayCoeff{T<:Real} AbstractArray{T}
-typealias Coeff Union{ScalarCoeff, ArrayCoeff}
+const ScalarCoeff = Real
+const ArrayCoeff{T <: Real} = AbstractArray{T}
+const Coeff = Union{ScalarCoeff,ArrayCoeff}
 
 
 
-type LinExpr{Tc<:Coeff, Tv<:AbstractVariable}
+mutable struct LinExpr{Tc<:Coeff,Tv<:AbstractVariable}
   constt::Tc
-  coeffs::Dict{Tv, Tc}
+  coeffs::Dict{Tv,Tc}
 
-  LinExpr(c::Tc, vc::Dict{Tv, Tc}) = new(c, filter((v, c) -> c != zero(c), vc))
-  LinExpr(c::Tc) = new(c, Dict{Tv, Tc}())
-  LinExpr(vc::Dict{Tv, Tc}) = LinExpr{Tc, Tv}(zero(Tc), vc)
-  LinExpr() = new(zero(Tc), Dict{Tv, Tc}())
+  LinExpr{Tc,Tv}(c::Tc, vc::Dict{Tv,Tc}) where {Tc,Tv} = new(c, filter((v, c) -> c != zero(c), vc))
+  LinExpr{Tc,Tv}(c::Tc) where {Tc,Tv} = new(c, Dict{Tv,Tc}())
+  LinExpr{Tc,Tv}() where {Tc,Tv} = new(zero(Tc), Dict{Tv,Tc}())
 end
 
-LinExpr{Tc<:Coeff, Tv<:AbstractVariable}(c::Tc, vc::Dict{Tv, Tc}) = LinExpr{Tc, Tv}(c, vc)
+LinExpr{Tc,Tv}(vc::Dict{Tv,Tc}) where {Tc,Tv} = LinExpr{Tc,Tv}(zero(Tc), vc)
+LinExpr(c::Tc, vc::Dict{Tv,Tc}) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}(c, vc)
+LinExpr(vc::Dict{Tv,Tc}) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}(zero(Tc), vc)
 
 
 
-function linexpr_show{Tc<:ScalarCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}, compact::Bool)
+function linexpr_show(io::IO, e::LinExpr{Tc,Tv}, compact::Bool) where {Tc <: ScalarCoeff, Tv <: AbstractVariable}
   start = true
   if e.constt != zero(e.constt) || isempty(e.coeffs)
     print(io, e.constt)
@@ -77,11 +78,11 @@ function linexpr_show{Tc<:ScalarCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{
     print(io, s)
   end
 end
-show{Tc<:ScalarCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}) = linexpr_show(io, e, false)
-showcompact{Tc<:ScalarCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv}) = linexpr_show(io, e, true)
+show(io::IO, e::LinExpr{Tc,Tv}) where {Tc <: ScalarCoeff, Tv <: AbstractVariable} = linexpr_show(io, e, false)
+showcompact(io::IO, e::LinExpr{Tc,Tv}) where {Tc <: ScalarCoeff, Tv <: AbstractVariable} = linexpr_show(io, e, true)
 
 
-function show{Tc<:ArrayCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv})
+function show(io::IO, e::LinExpr{Tc,Tv}) where {Tc <: ArrayCoeff, Tv <: AbstractVariable}
   start = true
   if e.constt != zero(e.constt) || isempty(e.coeffs)
     print(io, e.constt)
@@ -91,7 +92,7 @@ function show{Tc<:ArrayCoeff, Tv<:AbstractVariable}(io::IO, e::LinExpr{Tc, Tv})
     if start
       start = false
     else
-      print(io,"\n+\n\n")
+      print(io, "\n+\n\n")
     end
     print(io, c)
     print(io, s)
@@ -105,25 +106,25 @@ function ==(a::LinExpr, b::LinExpr)
 end
 
 
-function getcoeff{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, v::Tv)
+function getcoeff(e::LinExpr{Tc,Tv}, v::Tv) where {Tc <: Coeff, Tv <: AbstractVariable}
     get(e.coeffs, v, zero(e.constt))
 end
-function setcoeff!{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, v::Tv, x::Tc)
+function setcoeff!(e::LinExpr{Tc,Tv}, v::Tv, x::Tc) where {Tc <: Coeff, Tv <: AbstractVariable}
     e.coeffs[v] = x
 end
 
 
-one{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = LinExpr{Tc, Tv}(one(e.constt))
-zero{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}) = LinExpr{Tc, Tv}(zero(e.constt))
+one(e::LinExpr{Tc,Tv}) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}(one(e.constt))
+zero(e::LinExpr{Tc,Tv}) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}(zero(e.constt))
 
-one{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = LinExpr{Tc, Tv}(one(Tc))
-zero{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}) = LinExpr{Tc, Tv}(zero(Tc))
+one(::Type{LinExpr{Tc,Tv}}) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}(one(Tc))
+zero(::Type{LinExpr{Tc,Tv}}) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}(zero(Tc))
 
-conj{T<:Real}(x::TypedVariable{T}) = x
-conj{Tc<:Real, T<:Real}(e::LinExpr{Tc, TypedVariable{T}}) = e
+conj(x::TypedVariable{T}) where {T <: Real} = x
+conj(e::LinExpr{Tc,TypedVariable{T}}) where {Tc <: Real, T <: Real} = e
 
 
-function convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{Tc}, e::LinExpr{Tc, Tv})
+function convert(::Type{Tc}, e::LinExpr{Tc,Tv}) where {Tc <: Coeff, Tv <: AbstractVariable}
     if isempty(e.coeffs)
         e.constt
     else
@@ -131,7 +132,7 @@ function convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{Tc}, e::LinExpr{Tc, Tv}
     end
 end
 
-function convert{Tc<:ScalarCoeff, Tv<:AbstractVariable}(::Type{Tv}, e::LinExpr{Tc, Tv})
+function convert(::Type{Tv}, e::LinExpr{Tc,Tv}) where {Tc <: ScalarCoeff, Tv <: AbstractVariable}
     if e.constt != zero(Tc) || length(e.coeffs) != 1
         throw(InexactError())
     else
@@ -146,65 +147,65 @@ end
 
 
 
-convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}, e::LinExpr{Tc, Tv}) = e
-function convert{Tc1<:Coeff, Tc2<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc2, Tv}}, e::LinExpr{Tc1, Tv})
-    LinExpr{Tc2, Tv}(convert(Tc2, e.constt), Dict(v=>convert(Tc2, c) for (v, c) in e.coeffs))
+convert(::Type{LinExpr{Tc,Tv}}, e::LinExpr{Tc,Tv}) where {Tc <: Coeff, Tv <: AbstractVariable} = e
+function convert(::Type{LinExpr{Tc2,Tv}}, e::LinExpr{Tc1,Tv}) where {Tc1 <: Coeff, Tc2 <: Coeff, Tv <: AbstractVariable}
+    LinExpr{Tc2,Tv}(convert(Tc2, e.constt), Dict(v => convert(Tc2, c) for (v, c) in e.coeffs))
 end
 
 
-convert{Tc1<:Coeff, Tv<:AbstractVariable, Tc2<:Coeff}(::Type{LinExpr{Tc1, Tv}}, x::Tc2) = LinExpr{Tc1, Tv}(convert(Tc1, x), Dict{Tv, Tc1}())
-convert{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}, x::Tv) = LinExpr{Tc, Tv}(zero(Tc), Dict(x=>one(Tc)))
+convert(::Type{LinExpr{Tc1,Tv}}, x::Tc2) where {Tc1 <: Coeff, Tv <: AbstractVariable, Tc2 <: Coeff} = LinExpr{Tc1,Tv}(convert(Tc1, x), Dict{Tv,Tc1}())
+convert(::Type{LinExpr{Tc,Tv}}, x::Tv) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}(zero(Tc), Dict(x => one(Tc)))
 
 
-promote_rule{Tc1<:Coeff, Tc2<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc1, Tv}}, ::Type{LinExpr{Tc2, Tv}}) = LinExpr{promote_type(Tc1, Tc2), Tv}
-promote_rule{Tc1<:Coeff, Tv<:AbstractVariable, Tc2<:Coeff}(::Type{LinExpr{Tc1, Tv}}, ::Type{Tc2}) = LinExpr{promote_type(Tc1, Tc2), Tv}
-promote_rule{Tc<:Coeff, Tv<:AbstractVariable}(::Type{Tc}, ::Type{Tv}) = LinExpr{Tc, Tv}
-promote_rule{Tc<:Coeff, Tv<:AbstractVariable}(::Type{LinExpr{Tc, Tv}}, ::Type{Tv}) = LinExpr{Tc, Tv}
+promote_rule(::Type{LinExpr{Tc1,Tv}}, ::Type{LinExpr{Tc2,Tv}}) where {Tc1 <: Coeff, Tc2 <: Coeff, Tv <: AbstractVariable} = LinExpr{promote_type(Tc1, Tc2),Tv}
+promote_rule(::Type{LinExpr{Tc1,Tv}}, ::Type{Tc2}) where {Tc1 <: Coeff, Tv <: AbstractVariable, Tc2 <: Coeff} = LinExpr{promote_type(Tc1, Tc2),Tv}
+promote_rule(::Type{Tc}, ::Type{Tv}) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}
+promote_rule(::Type{LinExpr{Tc,Tv}}, ::Type{Tv}) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}
 
 
-function promote_rule{T1<:ScalarCoeff, T2<:ScalarCoeff, N, Tv<:AbstractVariable}(::Type{LinExpr{Array{T1, N}, Tv}}, ::Type{LinExpr{Array{T2, N}, Tv}})
-  LinExpr{Array{promote_type(T1, T2), N}, Tv}
+function promote_rule(::Type{LinExpr{Array{T1,N},Tv}}, ::Type{LinExpr{Array{T2,N},Tv}}) where {T1 <: ScalarCoeff, T2 <: ScalarCoeff, N, Tv <: AbstractVariable}
+  LinExpr{Array{promote_type(T1, T2),N},Tv}
 end
-function promote_rule{T1<:ScalarCoeff, T2<:ScalarCoeff, N, Tv<:AbstractVariable}(::Type{LinExpr{Array{T1, N}, Tv}}, ::Type{Array{T2, N}})
-  LinExpr{Array{promote_type(T1, T2), N}, Tv}
+function promote_rule(::Type{LinExpr{Array{T1,N},Tv}}, ::Type{Array{T2,N}}) where {T1 <: ScalarCoeff, T2 <: ScalarCoeff, N, Tv <: AbstractVariable}
+  LinExpr{Array{promote_type(T1, T2),N},Tv}
 end
 
 
-function *{Tc<:Coeff, Tv<:AbstractVariable}(c::Tc, e::LinExpr{Tc, Tv})
+function *(c::Tc, e::LinExpr{Tc,Tv}) where {Tc <: Coeff, Tv <: AbstractVariable}
   constt = e.constt * c
   coeffs = similar(e.coeffs)
   for (s, coeff) in e.coeffs
     coeffs[s] = c * coeff
   end
-  LinExpr{Tc, Tv}(constt, coeffs)
+  LinExpr{Tc,Tv}(constt, coeffs)
 end
-*{Tc<:Coeff, Tv<:AbstractVariable}(e::LinExpr{Tc, Tv}, c::Tc) = c * e
+*(e::LinExpr{Tc,Tv}, c::Tc) where {Tc <: Coeff, Tv <: AbstractVariable} = c * e
 
-function *{Tc1<:Coeff, Tv<:AbstractVariable, Tc2<:Coeff}(c::Tc2, e::LinExpr{Tc1, Tv})
+function *(c::Tc2, e::LinExpr{Tc1,Tv}) where {Tc1 <: Coeff, Tv <: AbstractVariable, Tc2 <: Coeff}
     Tc_common = promote_type(Tc1, Tc2)
-    convert(Tc_common, c) * convert(LinExpr{Tc_common, Tv}, e)
+    convert(Tc_common, c) * convert(LinExpr{Tc_common,Tv}, e)
 end
-*{Tc1<:Coeff, Tv<:AbstractVariable, Tc2<:Coeff}(e::LinExpr{Tc1, Tv}, c::Tc2) = c * e
+*(e::LinExpr{Tc1,Tv}, c::Tc2) where {Tc1 <: Coeff, Tv <: AbstractVariable, Tc2 <: Coeff} = c * e
 
-*{Tc<:Coeff, Tv<:AbstractVariable}(c::Tc, s::Tv) = LinExpr{Tc, Tv}(zero(c), Dict(s=>c))
-*{Tc<:Coeff, Tv<:AbstractVariable}(s::Tv, c::Tc) = c * s
-
-
-
-
-typealias VarOrLinExpr Union{AbstractVariable, LinExpr}
+*(c::Tc, s::Tv) where {Tc <: Coeff, Tv <: AbstractVariable} = LinExpr{Tc,Tv}(zero(c), Dict(s => c))
+*(s::Tv, c::Tc) where {Tc <: Coeff, Tv <: AbstractVariable} = c * s
 
 
 
-.*(a::ScalarCoeff, e::VarOrLinExpr) = a*e
-.*(e::VarOrLinExpr, a::ScalarCoeff) = e*a
 
-.*(e::VarOrLinExpr, a::ArrayCoeff) = map(x -> e*x, a)
-.*(a::ArrayCoeff, e::VarOrLinExpr) = e .* a
+const VarOrLinExpr = Union{AbstractVariable,LinExpr}
 
 
 
-function +{T<:LinExpr}(a::T, b::T)
+# .*(a::ScalarCoeff, e::VarOrLinExpr) = a * e
+# .*(e::VarOrLinExpr, a::ScalarCoeff) = e * a
+#
+# .*(e::VarOrLinExpr, a::ArrayCoeff) = map(x -> e * x, a)
+# .*(a::ArrayCoeff, e::VarOrLinExpr) = e .* a
+
+
+
+function +(a::T, b::T) where {T <: LinExpr}
   constt = a.constt + b.constt
   coeffs = similar(a.coeffs)
   for (v, c) in a.coeffs
@@ -226,35 +227,39 @@ function -(a::LinExpr)
   b
 end
 
--{T<:LinExpr}(a::T, b::T) = a + (-b)
+-(a::T, b::T) where {T <: LinExpr} = a + (-b)
 
 -(x::AbstractVariable) = -1 * x
 +(x::AbstractVariable) = 1 * x
 
 
-+(x::VarOrLinExpr, y::VarOrLinExpr) = +(promote(+x,y)...)
++(x::VarOrLinExpr, y::VarOrLinExpr) = +(promote(+x, y)...)
 -(x::VarOrLinExpr, y::VarOrLinExpr) = x + (-y)
 
-+(x::VarOrLinExpr, y::Coeff) = +(promote(x,y)...)
++(x::VarOrLinExpr, y::Coeff) = +(promote(x, y)...)
 +(x::Coeff, y::VarOrLinExpr) = y + x
 
--(x::VarOrLinExpr, y::Coeff) = -(promote(x,y)...)
+-(x::VarOrLinExpr, y::Coeff) = -(promote(x, y)...)
 -(x::Coeff, y::VarOrLinExpr) = x + (-y)
 
 
-==(x::VarOrLinExpr, y::Coeff) = ==(promote(x,y)...)
-!=(x::VarOrLinExpr, y::Coeff) = !(==(promote(x,y)...))
+transpose(x::RealVariable) = x
+transpose(x::LinExpr{<:Real, <:RealVariable}) = x
 
 
-=={T1<:AbstractVariable, T2<:AbstractVariable}(::T1, ::T2) = false  # safe for different variable types
-==(x::VarOrLinExpr, y::VarOrLinExpr) = ==(promote(x,y)...)
-!=(x::VarOrLinExpr, y::VarOrLinExpr) = !(==(promote(x,y)...))
+==(x::VarOrLinExpr, y::Coeff) = ==(promote(x, y)...)
+!=(x::VarOrLinExpr, y::Coeff) = !(==(promote(x, y)...))
 
 
-differentiate(s::AbstractVariable, d::AbstractVariable) = s==d ? one(1) : zero(0)
-differentiate{T}(s::TypedVariable{T}, d::TypedVariable{T}) = s==d ? one(T) : zero(T)
+==(::T1, ::T2) where {T1 <: AbstractVariable, T2 <: AbstractVariable} = false  # safe for different variable types
+==(x::VarOrLinExpr, y::VarOrLinExpr) = ==(promote(x, y)...)
+!=(x::VarOrLinExpr, y::VarOrLinExpr) = !(==(promote(x, y)...))
+
+
+differentiate(s::AbstractVariable, d::AbstractVariable) = s == d ? one(1) : zero(0)
+differentiate(s::TypedVariable{T}, d::TypedVariable{T}) where {T} = s == d ? one(T) : zero(T)
 differentiate(c::Coeff, d::AbstractVariable) = zero(c)
-differentiate{Tc, Tv}(e::LinExpr{Tc, Tv}, d::Tv) = get(e.coeffs, d, zero(e.constt))
+differentiate(e::LinExpr{Tc,Tv}, d::Tv) where {Tc, Tv} = get(e.coeffs, d, zero(e.constt))
 
 
 end # module
