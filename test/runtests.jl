@@ -1,5 +1,5 @@
 using LinearExpressions
 
-using Base.Test
+using Test
 
 include("tests.jl")

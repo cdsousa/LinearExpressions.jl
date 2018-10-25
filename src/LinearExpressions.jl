@@ -42,7 +42,7 @@ mutable struct LinExpr{Tc<:Coeff,Tv<:AbstractVariable}
   constt::Tc
   coeffs::Dict{Tv,Tc}
 
-  LinExpr{Tc,Tv}(c::Tc, vc::Dict{Tv,Tc}) where {Tc,Tv} = new(c, filter((v, c) -> c != zero(c), vc))
+  LinExpr{Tc,Tv}(c::Tc, vc::Dict{Tv,Tc}) where {Tc,Tv} = new(c, filter(vc -> vc.second != zero(vc.second), vc))
   LinExpr{Tc,Tv}(c::Tc) where {Tc,Tv} = new(c, Dict{Tv,Tc}())
   LinExpr{Tc,Tv}() where {Tc,Tv} = new(zero(Tc), Dict{Tv,Tc}())
 end
@@ -128,17 +128,17 @@ function convert(::Type{Tc}, e::LinExpr{Tc,Tv}) where {Tc <: Coeff, Tv <: Abstra
     if isempty(e.coeffs)
         e.constt
     else
-        throw(InexactError())
+        throw(InexactError(:convert, Tc, e))
     end
 end
 
 function convert(::Type{Tv}, e::LinExpr{Tc,Tv}) where {Tc <: ScalarCoeff, Tv <: AbstractVariable}
     if e.constt != zero(Tc) || length(e.coeffs) != 1
-        throw(InexactError())
+        throw(InexactError(:convert, Tv, e))
     else
         s = collect(keys(e.coeffs))[1]
         if e.coeffs[s] != one(Tc)
-            throw(InexactError())
+            throw(InexactError(:convert, Tv, e))
         else
             s
         end
@@ -173,7 +173,7 @@ end
 
 function *(c::Tc, e::LinExpr{Tc,Tv}) where {Tc <: Coeff, Tv <: AbstractVariable}
   constt = e.constt * c
-  coeffs = similar(e.coeffs)
+  coeffs = empty(e.coeffs)
   for (s, coeff) in e.coeffs
     coeffs[s] = c * coeff
   end
@@ -197,17 +197,17 @@ const VarOrLinExpr = Union{AbstractVariable,LinExpr}
 
 
 
-# .*(a::ScalarCoeff, e::VarOrLinExpr) = a * e
-# .*(e::VarOrLinExpr, a::ScalarCoeff) = e * a
+# Base.broadcast(::typeof(*), a::ScalarCoeff, e::VarOrLinExpr) = a * e
+# Base.broadcast(::typeof(*), e::VarOrLinExpr, a::ScalarCoeff) = e * a
 #
-# .*(e::VarOrLinExpr, a::ArrayCoeff) = map(x -> e * x, a)
-# .*(a::ArrayCoeff, e::VarOrLinExpr) = e .* a
+Base.broadcast(::typeof(*), e::VarOrLinExpr, a::ArrayCoeff) = map(x -> e * x, a)
+# Base.broadcast(::typeof(*), a::ArrayCoeff, e::VarOrLinExpr) = e .* a
 
 
 
 function +(a::T, b::T) where {T <: LinExpr}
   constt = a.constt + b.constt
-  coeffs = similar(a.coeffs)
+  coeffs = empty(a.coeffs)
   for (v, c) in a.coeffs
     coeffs[v] = c
   end
@@ -220,7 +220,7 @@ end
 +(a::LinExpr) = a
 
 function -(a::LinExpr)
-  b = LinExpr(-a.constt, similar(a.coeffs))
+  b = LinExpr(-a.constt, empty(a.coeffs))
   for (v, c) in a.coeffs
     b.coeffs[v] = -c
   end
@@ -253,7 +253,7 @@ transpose(x::LinExpr{<:Real, <:RealVariable}) = x
 
 ==(::T1, ::T2) where {T1 <: AbstractVariable, T2 <: AbstractVariable} = false  # safe for different variable types
 ==(x::VarOrLinExpr, y::VarOrLinExpr) = ==(promote(x, y)...)
-!=(x::VarOrLinExpr, y::VarOrLinExpr) = !(==(promote(x, y)...))
+!=(x::VarOrLinExpr, y::VarOrLinExpr) = !(x==y)
 
 
 differentiate(s::AbstractVariable, d::AbstractVariable) = s == d ? one(1) : zero(0)
